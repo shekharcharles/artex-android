@@ -70,7 +70,7 @@ final class ToolCatalog {
             c.setInstanceFollowRedirects(true);
             int code = c.getResponseCode();
             if (code != 200) {
-                cb.onError("清单请求失败：HTTP " + code);
+                cb.onError("Catalog request failed: HTTP " + code);
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -81,7 +81,7 @@ final class ToolCatalog {
             }
             List<Entry> list = parse(sb.toString());
             if (list.isEmpty()) {
-                cb.onError("清单是空的");
+                cb.onError("Catalog is empty");
                 return;
             }
             cb.onCatalog(list);
@@ -131,7 +131,7 @@ final class ToolCatalog {
             c.setRequestProperty("Accept", "application/octet-stream");
             int code = c.getResponseCode();
             if (code != 200) {
-                cb.onError("下载失败：HTTP " + code);
+                cb.onError("Download failed: HTTP " + code);
                 return;
             }
             long total = c.getContentLengthLong();
@@ -146,7 +146,7 @@ final class ToolCatalog {
                     got += n;
                     if (got > MAX_BYTES) {
                         tmp.delete();
-                        cb.onError("文件超过 300MB");
+                        cb.onError("File exceeds 300 MB");
                         return;
                     }
                     out.write(buf, 0, n);
@@ -164,9 +164,9 @@ final class ToolCatalog {
             if (e.sha256 != null && !e.sha256.isEmpty()
                     && !e.sha256.equalsIgnoreCase(actual)) {
                 tmp.delete();
-                cb.onError("校验失败：sha256 不匹配\n"
-                        + "期望 " + e.sha256.substring(0, Math.min(16, e.sha256.length())) + "…\n"
-                        + "实际 " + actual.substring(0, 16) + "…");
+                cb.onError("Verification failed: SHA-256 mismatch\n"
+                        + "Expected " + e.sha256.substring(0, Math.min(16, e.sha256.length())) + "…\n"
+                        + "Actual " + actual.substring(0, 16) + "…");
                 return;
             }
             cb.onDone(tmp);
