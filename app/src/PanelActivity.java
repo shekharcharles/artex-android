@@ -170,16 +170,16 @@ public class PanelActivity extends Activity {
 
         // 分组标题
         TextView groupTitle = new TextView(this);
-        groupTitle.setText("数据");
+        groupTitle.setText("Data");
         groupTitle.setTextSize(11);
         groupTitle.setTextColor(cDesc);
         groupTitle.setPadding(dp(16), dp(16), dp(16), dp(6));
         box.addView(groupTitle);
 
-        box.addView(buildItem("ic_ctl_download", "备份", v -> startBackup()));
-        box.addView(buildItem("ic_ctl_upload", "恢复", v -> confirmRestore()));
+        box.addView(buildItem("ic_ctl_download", "Backup", v -> startBackup()));
+        box.addView(buildItem("ic_ctl_upload", "Restore", v -> confirmRestore()));
 
-        box.addView(buildGroupTitle("工具"));
+        box.addView(buildGroupTitle("Tools"));
 
         // 工具组只有两层：已安装列表 / 从本地文件 / 从 GitHub 下载。
         // 原来外面还包了一层「导入工具」，那层既不是容器也不是动作，
@@ -268,7 +268,7 @@ public class PanelActivity extends Activity {
 
         // 三层结构：已安装列表（可折叠）/ 从本地文件（动作）/ 从 GitHub 下载（可折叠）
         container.addView(buildLocalToolSection(tools));
-        container.addView(buildToolAction("导入", this::pickToolFile));
+        container.addView(buildToolAction("Import", this::pickToolFile));
         container.addView(buildDownloadSection());
 
         // 重建后把展开状态还原回去
@@ -296,11 +296,11 @@ public class PanelActivity extends Activity {
         wrap.setOrientation(LinearLayout.VERTICAL);
 
         // 空列表时不折叠，直接给一行提示 —— 折叠一个空列表没有意义，
-        // 用户点开只会看到"没有东西"。有工具时统一走折叠头，
+        // 用户点开只会看到"Nothing here"。有工具时统一走折叠头，
         // 保持三处折叠区外观一致。
         if (tools.isEmpty()) {
             TextView empty = new TextView(this);
-            empty.setText("还没有安装工具");
+            empty.setText("No tools installed");
             empty.setTextSize(12);
             empty.setTextColor(cDesc);
             empty.setPadding(dp(16), dp(2), dp(16), dp(10));
@@ -319,7 +319,7 @@ public class PanelActivity extends Activity {
         prependIcon(head, "ic_ctl_installed", 15);
 
         localToolHeader = new TextView(this);
-        localToolHeader.setText("已安装 · " + tools.size());
+        localToolHeader.setText("Installed · " + tools.size());
         localToolHeader.setTextSize(13);
         localToolHeader.setTextColor(cText);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
@@ -397,7 +397,7 @@ public class PanelActivity extends Activity {
         row.setFocusable(true);
         row.setOnClickListener(v -> showToolActions(f));
 
-        // 这个列表里每一项都是"已安装"，整行染绿反而失去区分度。
+        // 这个列表里每一项都是"Installed"，整行染绿反而失去区分度。
         // 用一个小绿点做标记：扫一眼知道这是可用状态，又不至于满屏绿。
         View dot = new View(this);
         android.graphics.drawable.GradientDrawable dg =
@@ -503,7 +503,7 @@ public class PanelActivity extends Activity {
                 startActivity(new Intent(Intent.ACTION_VIEW,
                         Uri.parse("https://github.com/Srysfu")));
             } catch (Throwable t) {
-                Toast.makeText(PanelActivity.this, "无法打开浏览器",
+                Toast.makeText(PanelActivity.this, "Unable to open browser",
                         Toast.LENGTH_SHORT).show();
             }
         });
@@ -618,14 +618,14 @@ public class PanelActivity extends Activity {
     private void startBackup() {
         if (busyForNewTask()) return;
         new AlertDialog.Builder(this)
-                .setTitle("备份")
+                .setTitle("Backup")
                 .setItems(new String[]{
-                        "完整备份（含任务文件）",
-                        "精简备份（不含任务文件，仅数据库与记录）"
+                        "Full backup (including task files)",
+                        "Compact backup (database and records only, excluding task files)"
                 }, (d, which) -> {
                     final boolean lite = (which == 1);
                     setWorking(true);
-                    appendDetail(lite ? "开始精简备份…" : "开始备份…");
+                    appendDetail(lite ? "Starting compact backup…" : "Starting backup…");
                     final ArtExService svc = ArtExService.getOrCreate(PanelActivity.this);
                     new Thread(() -> new BackupManager(PanelActivity.this)
                             .run(svc, lite, new BackupManager.Callback() {
@@ -637,21 +637,21 @@ public class PanelActivity extends Activity {
                                     // 备份前 stop 过服务（不停库拷目录会拿到
                                     // 半写的 WAL，恢复时 PG 可能直接拒绝启动），
                                     // 这里必须拉起来，否则用户回页面全是连接失败。
-                                    appendDetail("备份完成：\n" + path);
-                                    appendDetail("正在重启服务…");
+                                    appendDetail("Backup completed:\n" + path);
+                                    appendDetail("Restarting service…");
                                     restartService();
                                     runOnUiThread(() -> {
                                         try {
                                             Toast.makeText(PanelActivity.this,
-                                                    "备份完成", Toast.LENGTH_SHORT).show();
+                                                    "Backup completed", Toast.LENGTH_SHORT).show();
                                         } catch (Throwable ignored) {}
                                     });
                                 }
 
                                 @Override public void onError(String msg) {
                                     // 失败时服务同样是停的，也得拉起来
-                                    appendDetail("备份失败：" + msg);
-                                    appendDetail("正在重启服务…");
+                                    appendDetail("Backup failed: " + msg);
+                                    appendDetail("Restarting service…");
                                     restartService();
                                 }
                             }), "backup").start();
@@ -663,18 +663,18 @@ public class PanelActivity extends Activity {
     private void confirmRestore() {
         if (busyForNewTask()) return;
         new AlertDialog.Builder(this)
-                .setTitle("恢复备份")
-                .setMessage("即将用所选备份覆盖当前全部数据（数据库 + 工作空间）。\n\n"
-                        + "当前数据会先保留一份，若恢复失败会自动回滚。\n\n继续？")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("选择备份文件", (d, w) -> {
+                .setTitle("Restore backup")
+                .setMessage("The selected backup will replace all current data (database and workspace).\n\n"
+                        + "Current data will be backed up and automatically restored if recovery fails.\n\nContinue?")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Select backup file", (d, w) -> {
                     try {
                         Intent it = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                         it.addCategory(Intent.CATEGORY_OPENABLE);
                         it.setType("*/*");
                         startActivityForResult(it, REQ_PICK_ZIP);
                     } catch (Throwable t) {
-                        appendDetail("打开文件选择器失败：" + t);
+                        appendDetail("Unable to open file picker: " + t);
                     }
                 })
                 .show();
@@ -738,28 +738,28 @@ public class PanelActivity extends Activity {
     /** 点某个已导入的工具：重新检测 / 删除 */
     private void showToolActions(File f) {
         String ver = toolVersions.get(f.getName());
-        String sub = ver == null ? "未检测" : (ver.isEmpty() ? "检测过，没拿到版本号" : ver);
+        String sub = ver == null ? "Not checked" : (ver.isEmpty() ? "Checked; version unavailable" : ver);
         new AlertDialog.Builder(this)
                 .setTitle(f.getName())
-                .setMessage("版本：" + sub + "\n"
-                        + "路径：" + f.getAbsolutePath())
-                .setNeutralButton("删除", (d, w) -> confirmDeleteTool(f))
-                .setNegativeButton("取消", null)
-                .setPositiveButton("重新检测", (d, w) -> recheckTool(f))
+                .setMessage("Version: " + sub + "\n"
+                        + "Path: " + f.getAbsolutePath())
+                .setNeutralButton("Delete", (d, w) -> confirmDeleteTool(f))
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Check again", (d, w) -> recheckTool(f))
                 .show();
     }
 
     private void confirmDeleteTool(File f) {
         new AlertDialog.Builder(this)
-                .setTitle("删除 " + f.getName() + "？")
-                .setMessage("导入的工具会从 PATH 移除，后端将不再能找到它。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("删除", (dd, ww) -> {
+                .setTitle("Delete " + f.getName() + "？")
+                .setMessage("The imported tool will be removed from PATH and will no longer be available to the backend.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Delete", (dd, ww) -> {
                     if (f.delete()) {
                         forgetToolVersion(f.getName());
-                        appendDetail("已删除工具：" + f.getName());
+                        appendDetail("Tool deleted: " + f.getName());
                     } else {
-                        appendDetail("删除失败：" + f.getName());
+                        appendDetail("Deletion failed: " + f.getName());
                     }
                     refreshToolList();
                 })
@@ -770,7 +770,7 @@ public class PanelActivity extends Activity {
     private void recheckTool(File f) {
         if (busyForNewTask()) return;
         setWorking(true);
-        appendDetail("检测工具：" + f.getName());
+        appendDetail("Checking tool: " + f.getName());
         final ArtExService svc = ArtExService.getOrCreate(getApplicationContext());
         final File dir = ArtExService.extToolsDir(this);
         new Thread(() -> {
@@ -781,11 +781,11 @@ public class PanelActivity extends Activity {
                 if (pr.usable) {
                     if (!pr.version.isEmpty()) saveToolVersion(f.getName(), pr.version);
                     appendDetail(pr.version.isEmpty()
-                            ? "可用（没拿到版本号）"
-                            : "可用：" + pr.version);
+                            ? "Available (version unavailable)"
+                            : "Available: " + pr.version);
                 } else {
                     forgetToolVersion(f.getName());
-                    appendDetail("不可用：" + pr.detail);
+                    appendDetail("Unavailable: " + pr.detail);
                 }
             } finally {
                 setWorking(false);
@@ -838,7 +838,7 @@ public class PanelActivity extends Activity {
         prependIcon(head, "ic_ctl_skill", 15);
 
         skillHeaderLabel = new TextView(this);
-        skillHeaderLabel.setText("Skill 库");
+        skillHeaderLabel.setText("Skill catalog");
         skillHeaderLabel.setTextSize(13);
         skillHeaderLabel.setTextColor(cText);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
@@ -887,7 +887,7 @@ public class PanelActivity extends Activity {
         skillListBox.setVisibility(View.VISIBLE);
         skillCatalogCache = null;
         skillListBox.removeAllViews();
-        skillHeaderLabel.setText("Skill 库 · 获取中…");
+        skillHeaderLabel.setText("Skill catalog · Loading…");
 
         final String token = currentToken();
         new Thread(() -> {
@@ -904,7 +904,7 @@ public class PanelActivity extends Activity {
                     runOnUiThread(() -> {
                         if (skillListBox == null) return;
                         skillListBox.removeAllViews();
-                        skillHeaderLabel.setText("Skill 库 · 失败");
+                        skillHeaderLabel.setText("Skill catalog · Failed");
                         TextView tv = new TextView(PanelActivity.this);
                         tv.setText(msg);
                         tv.setTextSize(11);
@@ -927,7 +927,7 @@ public class PanelActivity extends Activity {
             skillListBox.addView(buildSkillRow(e, on));
         }
         if (skillHeaderLabel != null) {
-            skillHeaderLabel.setText("Skill 库 · " + installedCount + "/" + entries.size());
+            skillHeaderLabel.setText("Skill catalog · " + installedCount + "/" + entries.size());
         }
     }
 
@@ -942,7 +942,7 @@ public class PanelActivity extends Activity {
 
         TextView name = new TextView(this);
         name.setText(e.name + (e.version.isEmpty() ? "" : "  v" + e.version)
-                + (installed ? "  （已安装）" : ""));
+                + (installed ? "  (Installed)" : ""));
         name.setTextSize(12);
         // 已装的用绿色，比原来"压暗成次要色"醒目 —— 装没装才是要看的信息
         name.setTextColor(installed ? cOk : cText);
@@ -969,16 +969,16 @@ public class PanelActivity extends Activity {
             new AlertDialog.Builder(this)
                     .setTitle(e.name + "  v" + e.version)
                     .setMessage(e.description)
-                    .setNegativeButton("取消", null)
-                    .setNeutralButton("删除", (d, w) -> uninstallSkill(e))
-                    .setPositiveButton("重新安装", (d, w) -> installSkill(e, true))
+                    .setNegativeButton("Cancel", null)
+                    .setNeutralButton("Delete", (d, w) -> uninstallSkill(e))
+                    .setPositiveButton("Reinstall", (d, w) -> installSkill(e, true))
                     .show();
         } else {
             new AlertDialog.Builder(this)
                     .setTitle(e.name + "  v" + e.version)
-                    .setMessage(e.description + "\n\n安装到后端 skills 目录？")
-                    .setNegativeButton("取消", null)
-                    .setPositiveButton("安装", (d, w) -> installSkill(e, false))
+                    .setMessage(e.description + "\n\nInstall into the backend skills directory?")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Install", (d, w) -> installSkill(e, false))
                     .show();
         }
     }
@@ -992,7 +992,7 @@ public class PanelActivity extends Activity {
      */
     private boolean busyForNewTask() {
         if (working || skillBusy) {
-            appendDetail("正在执行，请稍候…");
+            appendDetail("Working…");
             return true;
         }
         return false;
@@ -1001,11 +1001,11 @@ public class PanelActivity extends Activity {
     private void installSkill(final SkillCatalog.Entry e, final boolean overwrite) {
         if (busyForNewTask()) return;
         skillBusy = true;
-        appendDetail("安装 skill：" + e.name);
+        appendDetail("Installing skill: " + e.name);
         final String token = currentToken();
         if (token.isEmpty()) {
             skillBusy = false;
-            appendDetail("安装失败：没有登录态（cookie 里找不到 artex_token）");
+            appendDetail("Installation failed: not signed in (artex_token cookie missing)");
             return;
         }
         new Thread(() -> {
@@ -1017,7 +1017,7 @@ public class PanelActivity extends Activity {
                             }
 
                             @Override public void onDone(String name) {
-                                appendDetail("已安装 skill：" + name);
+                                appendDetail("Skill installed: " + name);
                                 // 装完刷新，让「已安装」标记立刻更新
                                 final String t2 = currentToken();
                                 java.util.Set<String> now =
@@ -1028,13 +1028,13 @@ public class PanelActivity extends Activity {
                                     if (skillCatalogCache != null) renderSkillList(skillCatalogCache);
                                     try {
                                         Toast.makeText(PanelActivity.this,
-                                                "已安装：" + name, Toast.LENGTH_SHORT).show();
+                                                "Installed: " + name, Toast.LENGTH_SHORT).show();
                                     } catch (Throwable ignored) {}
                                 });
                             }
 
                             @Override public void onError(String msg) {
-                                appendDetail("安装失败：" + msg);
+                                appendDetail("Installation failed: " + msg);
                             }
                         });
             } finally {
@@ -1046,19 +1046,19 @@ public class PanelActivity extends Activity {
     private void uninstallSkill(final SkillCatalog.Entry e) {
         if (busyForNewTask()) return;
         skillBusy = true;
-        appendDetail("删除 skill：" + e.name);
+        appendDetail("Deleting skill: " + e.name);
         final String token = currentToken();
         new Thread(() -> {
             try {
                 boolean ok = new SkillCatalog(this, API_BASE, token).delete(e.name);
                 if (ok) {
-                    appendDetail("已删除：" + e.name);
+                    appendDetail("Deleted: " + e.name);
                     if (installedSkills != null) installedSkills.remove(e.name);
                     runOnUiThread(() -> {
                         if (skillCatalogCache != null) renderSkillList(skillCatalogCache);
                     });
                 } else {
-                    appendDetail("删除失败：" + e.name);
+                    appendDetail("Deletion failed: " + e.name);
                 }
             } finally {
                 skillBusy = false;
@@ -1087,7 +1087,7 @@ public class PanelActivity extends Activity {
         prependIcon(head, "ic_ctl_remote", 15);
 
         dlHeaderLabel = new TextView(this);
-        dlHeaderLabel.setText("从 GitHub 下载");
+        dlHeaderLabel.setText("Download from GitHub");
         dlHeaderLabel.setTextSize(13);
         dlHeaderLabel.setTextColor(cText);
         LinearLayout.LayoutParams tlp = new LinearLayout.LayoutParams(
@@ -1139,21 +1139,21 @@ public class PanelActivity extends Activity {
         }
         dlListBox.removeAllViews();
         dlListBox.setVisibility(View.VISIBLE);
-        dlHeaderLabel.setText("从 GitHub 下载 · 获取中…");
-        appendDetail("正在获取工具清单…");
+        dlHeaderLabel.setText("Download from GitHub · Loading…");
+        appendDetail("Fetching tool catalog…");
         new Thread(() -> new ToolCatalog(this).fetch(new ToolCatalog.FetchCallback() {
             @Override public void onCatalog(java.util.List<ToolCatalog.Entry> entries) {
                 catalogCache = entries;
-                appendDetail("清单已获取：" + entries.size() + " 个工具");
+                appendDetail("Catalog loaded: " + entries.size() + " tools");
                 runOnUiThread(() -> renderDownloadList(entries));
             }
 
             @Override public void onError(String msg) {
-                appendDetail("获取清单失败：" + msg);
+                appendDetail("Unable to load catalog: " + msg);
                 runOnUiThread(() -> {
                     if (dlListBox == null) return;
                     dlListBox.removeAllViews();
-                    dlHeaderLabel.setText("从 GitHub 下载 · 失败");
+                    dlHeaderLabel.setText("Download from GitHub · Failed");
                     TextView tv = new TextView(PanelActivity.this);
                     tv.setText(msg);
                     tv.setTextSize(11);
@@ -1172,7 +1172,7 @@ public class PanelActivity extends Activity {
             {"discover", "内容发现"},
             {"scan", "漏洞扫描"},
             {"tunnel", "隧道穿透"},
-            {"util", "其他"},
+            {"util", "Other"},
     };
 
     /**
@@ -1220,7 +1220,7 @@ public class PanelActivity extends Activity {
         }
 
         if (dlHeaderLabel != null) {
-            dlHeaderLabel.setText("从 GitHub 下载 · " + installedCount + "/" + entries.size());
+            dlHeaderLabel.setText("Download from GitHub · " + installedCount + "/" + entries.size());
         }
         // 面板变长了，滚到底部按钮
         if (dlListBox.getParent() != null) {
@@ -1282,7 +1282,7 @@ public class PanelActivity extends Activity {
         texts.addView(name);
 
         TextView desc = new TextView(this);
-        desc.setText(e.description + (installed ? "（已安装）" : ""));
+        desc.setText(e.description + (installed ? "(Installed)" : ""));
         desc.setTextSize(10);
         desc.setTextColor(installed ? cOk : cDesc);
         desc.setSingleLine(true);
@@ -1312,18 +1312,18 @@ public class PanelActivity extends Activity {
         new AlertDialog.Builder(this)
                 .setTitle(e.name + "  v" + e.version)
                 .setMessage(e.description + "\n\n"
-                        + "体积：" + String.format(java.util.Locale.US,
+                        + "Size: " + String.format(java.util.Locale.US,
                         "%.1f MB", e.size / 1048576.0)
-                        + "\n\n这个工具已经装过了，重新下载会覆盖现有文件。")
-                .setNegativeButton("取消", null)
-                .setPositiveButton("下载", (d, w) -> startDownload(e))
+                        + "\n\nThis tool is already installed. Downloading again will overwrite the existing file.")
+                .setNegativeButton("Cancel", null)
+                .setPositiveButton("Download", (d, w) -> startDownload(e))
                 .show();
     }
 
     private void startDownload(ToolCatalog.Entry e) {
         if (busyForNewTask()) return;
         setWorking(true);
-        appendDetail("开始下载：" + e.name);
+        appendDetail("Starting download: " + e.name);
         final File dir = ArtExService.extToolsDir(this);
         final ArtExService svc = ArtExService.getOrCreate(getApplicationContext());
         final ToolImporter ti = new ToolImporter(this, dir,
@@ -1336,7 +1336,7 @@ public class PanelActivity extends Activity {
                         int pct = total > 0 ? (int) (got * 100 / total) : -1;
                         if (pct >= 0 && pct == lastPct) return;
                         lastPct = pct;
-                        appendDetail("下载 " + e.name + "  "
+                        appendDetail("Downloading " + e.name + "  "
                                 + String.format(java.util.Locale.US, "%.1f/%.1f MB",
                                 got / 1048576.0, total > 0 ? total / 1048576.0 : 0)
                                 + (pct >= 0 ? "  " + pct + "%" : ""));
@@ -1344,19 +1344,19 @@ public class PanelActivity extends Activity {
 
                     @Override public void onDone(File file) {
                         try {
-                            appendDetail("下载完成，校验 sha256 通过");
+                            appendDetail("Download complete; SHA-256 verified");
                             // 走完整链路：静态校验 → 试跑 → 改名。
                             // 只跑 probe 的话，架构不对的二进制会被报成
                             // 「试跑未通过」，误导用户去查工具本身。
                             ToolImporter.Install in = ti.installDownloaded(file, e.name);
                             if (!in.ok) {
-                                appendDetail("安装失败：" + in.reason);
+                                appendDetail("Installation failed: " + in.reason);
                                 return;
                             }
                             if (in.version != null && !in.version.isEmpty()) {
                                 saveToolVersion(e.name, in.version);
                             }
-                            appendDetail("已安装：" + e.name
+                            appendDetail("Installed: " + e.name
                                     + (in.version == null || in.version.isEmpty()
                                     ? "" : "  " + in.version));
                             runOnUiThread(() -> {
@@ -1367,7 +1367,7 @@ public class PanelActivity extends Activity {
                                 if (catalogCache != null) renderDownloadList(catalogCache);
                                 try {
                                     Toast.makeText(PanelActivity.this,
-                                            "下载完成：" + e.name, Toast.LENGTH_SHORT).show();
+                                            "Download complete: " + e.name, Toast.LENGTH_SHORT).show();
                                 } catch (Throwable ignored) {}
                             });
                         } finally {
@@ -1379,7 +1379,7 @@ public class PanelActivity extends Activity {
 
                     @Override public void onError(String msg) {
                         try {
-                            appendDetail("下载失败：" + msg);
+                            appendDetail("Download failed: " + msg);
                         } finally {
                             setWorking(false);
                         }
@@ -1395,7 +1395,7 @@ public class PanelActivity extends Activity {
             it.setType("*/*");
             startActivityForResult(it, REQ_PICK_TOOL);
         } catch (Throwable t) {
-            appendDetail("打开文件选择器失败：" + t);
+            appendDetail("Unable to open file picker: " + t);
         }
     }
 
@@ -1416,7 +1416,7 @@ public class PanelActivity extends Activity {
             }
         } catch (Throwable ignored) {}
         final String displayName = name;
-        appendDetail("开始导入" + (name.isEmpty() ? "…" : "：" + name));
+        appendDetail("Starting import" + (name.isEmpty() ? "…" : "：" + name));
         final File dir = ArtExService.extToolsDir(this);
         final ArtExService svc = ArtExService.getOrCreate(getApplicationContext());
         final ToolImporter ti = new ToolImporter(this, dir,
@@ -1431,37 +1431,37 @@ public class PanelActivity extends Activity {
                 if (version != null && !version.isEmpty()) {
                     saveToolVersion(imported, version);
                 }
-                appendDetail("工具已进 PATH，后端可直接调用");
+                appendDetail("Tool added to PATH and available to the backend");
                 runOnUiThread(PanelActivity.this::refreshToolList);
                 runOnUiThread(() -> {
                     try {
                         Toast.makeText(PanelActivity.this,
-                                "导入成功：" + imported, Toast.LENGTH_SHORT).show();
+                                "Import successful: " + imported, Toast.LENGTH_SHORT).show();
                     } catch (Throwable ignored) {}
                 });
             }
 
             @Override public void onProbeFailed(String toolName, String reason, File pending) {
-                appendDetail("试跑未通过：" + reason);
+                appendDetail("Test run failed: " + reason);
                 runOnUiThread(() -> new AlertDialog.Builder(PanelActivity.this)
-                        .setTitle("试跑未通过")
+                        .setTitle("Test run failed")
                         .setMessage(reason + "\n\n"
-                                + "有些工具需要配置文件才能启动，属于正常现象。\n"
-                                + "要仍然导入吗？")
-                        .setNegativeButton("丢弃", (d, w) -> {
+                                + "Some tools require configuration files to start.\n"
+                                + "Import anyway?")
+                        .setNegativeButton("Discard", (d, w) -> {
                             pending.delete();
                             setWorking(false);
-                            appendDetail("已丢弃：" + toolName);
+                            appendDetail("Discarded: " + toolName);
                         })
-                        .setPositiveButton("仍然导入", (d, w) -> {
+                        .setPositiveButton("Import anyway", (d, w) -> {
                             File dst = ti.accept(pending, toolName);
                             setWorking(false);
                             if (dst != null) {
-                                appendDetail("已强制导入：" + toolName
+                                appendDetail("Imported without validation: " + toolName
                                         + " (" + String.format(java.util.Locale.US,
                                         "%.1f MB", dst.length() / 1048576.0) + ")");
                             } else {
-                                appendDetail("强制导入失败：" + toolName);
+                                appendDetail("Forced import failed: " + toolName);
                             }
                             refreshToolList();
                         })
@@ -1471,7 +1471,7 @@ public class PanelActivity extends Activity {
 
             @Override public void onError(String msg) {
                 try {
-                    appendDetail("导入失败：" + msg);
+                    appendDetail("Import failed: " + msg);
                 } finally {
                     setWorking(false);
                 }
@@ -1492,7 +1492,7 @@ public class PanelActivity extends Activity {
         Uri uri = data.getData();
         if (uri == null) return;
         setWorking(true);
-        appendDetail("开始恢复…");
+        appendDetail("Starting restore…");
         final ArtExService svc = ArtExService.getOrCreate(this);
         new Thread(() -> new RestoreManager(PanelActivity.this)
                 .run(svc, uri, new RestoreManager.Callback() {
@@ -1502,13 +1502,13 @@ public class PanelActivity extends Activity {
 
                     @Override public void onDone() {
                         setWorking(false);
-                        appendDetail("恢复完成，正在重启服务…");
+                        appendDetail("Restore complete; restarting service…");
                         restartService();
                     }
 
                     @Override public void onError(String msg) {
                         setWorking(false);
-                        appendDetail("恢复失败（已回滚）：" + msg);
+                        appendDetail("Restore failed (rolled back): " + msg);
                         restartService();
                     }
                 }), "restore").start();
@@ -1530,17 +1530,17 @@ public class PanelActivity extends Activity {
 
                         @Override public void onReady() {
                             setWorking(false);
-                            appendDetail("服务已恢复，可以正常使用");
+                            appendDetail("Service restored and ready");
                         }
 
                         @Override public void onError(String msg) {
                             setWorking(false);
-                            appendDetail("重启失败：" + msg);
+                            appendDetail("Restart failed: " + msg);
                         }
                     });
         } catch (Throwable t) {
             setWorking(false);
-            appendDetail("重启服务失败：" + t);
+            appendDetail("Service restart failed: " + t);
         }
     }
 
