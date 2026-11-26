@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">ARTEX</string>
-    <!-- MIUI 长按菜单显示的是 shortcutLongLabel，两个都写两字 -->
-    <string name="shortcut_scan_short">扫描</string>
-    <string name="shortcut_scan_long">扫描</string>
+    <!-- MIUI displays shortcutLongLabel in the long-press menu; keep both labels consistent -->
+    <string name="shortcut_scan_short">Scan</string>
+    <string name="shortcut_scan_long">Scan</string>
 </resources>
