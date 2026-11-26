@@ -77,7 +77,7 @@ public class BootConsole extends LinearLayout {
         centerBox.addView(logo, lp);
 
         statusView = new TextView(ctx);
-        statusView.setText("正在启动…");
+        statusView.setText("Starting…");
         statusView.setTextSize(TypedValue.COMPLEX_UNIT_SP, 14);
         statusView.setGravity(Gravity.CENTER);
         centerBox.addView(statusView, new LinearLayout.LayoutParams(
@@ -255,7 +255,7 @@ public class BootConsole extends LinearLayout {
     /** 启动成功：进度到 100，状态切成就绪 */
     public void complete() {
         setProgress(100);
-        ui.post(() -> statusView.setText("已就绪"));
+        ui.post(() -> statusView.setText("Ready"));
     }
 
     public void setLongPressCopy(final LogProvider provider) {
@@ -283,14 +283,14 @@ public class BootConsole extends LinearLayout {
             col.setPadding(dp(24), dp(48), dp(24), dp(24));
 
             TextView title = new TextView(getContext());
-            title.setText("启动失败");
+            title.setText("Startup failed");
             title.setTextSize(TypedValue.COMPLEX_UNIT_SP, 20);
             title.setTypeface(Typeface.DEFAULT_BOLD);
             title.setTextColor(red);
             col.addView(title);
 
             TextView err = new TextView(getContext());
-            err.setText(message == null ? "未知错误" : message);
+            err.setText(message == null ? "Unknown error" : message);
             err.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
             err.setTextColor(dim);
             err.setPadding(0, dp(10), 0, dp(20));
@@ -321,12 +321,12 @@ public class BootConsole extends LinearLayout {
             btns.setGravity(Gravity.END);
 
             Button copy = new Button(getContext());
-            copy.setText("复制日志");
+            copy.setText("Copy log");
             copy.setAllCaps(false);
             copy.setOnClickListener(v -> copyLog(provider));
 
             Button retry = new Button(getContext());
-            retry.setText("重试");
+            retry.setText("Retry");
             retry.setAllCaps(false);
             if (onRetry != null) {
                 retry.setOnClickListener(v -> onRetry.run());
@@ -362,10 +362,10 @@ public class BootConsole extends LinearLayout {
         sv.addView(tv);
 
         new AlertDialog.Builder(getContext())
-                .setTitle("启动日志")
+                .setTitle("Startup log")
                 .setView(sv)
-                .setPositiveButton("复制全部", (d, w) -> copyLog(logProvider))
-                .setNegativeButton("关闭", null)
+                .setPositiveButton("Copy all", (d, w) -> copyLog(logProvider))
+                .setNegativeButton("Close", null)
                 .show();
     }
 
@@ -377,7 +377,7 @@ public class BootConsole extends LinearLayout {
             if (cm == null) return;
             cm.setPrimaryClip(ClipData.newPlainText("artex-log", full));
             Toast.makeText(getContext(),
-                    "已复制 " + full.length() + " 字", Toast.LENGTH_SHORT).show();
+                    "Copied " + full.length() + " characters", Toast.LENGTH_SHORT).show();
         } catch (Throwable ignored) {}
     }
 
