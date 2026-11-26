@@ -41,17 +41,17 @@ public class RestoreManager {
         File artexOld = new File(filesDir, "artex.old");
         boolean moved = false;
         try {
-            cb.onProgress("停止服务…");
+            cb.onProgress("Stopping service…");
             if (svc != null) svc.stop();
             waitPgExit(cb);
 
-            cb.onProgress("备份现有数据（以便失败回滚）…");
+            cb.onProgress("Backing up existing data for rollback…");
             deleteRecursive(pgOld);
             deleteRecursive(artexOld);
             if (pg.exists()) moved |= pg.renameTo(pgOld);
             if (artex.exists()) moved |= artex.renameTo(artexOld);
 
-            cb.onProgress("解压备份…");
+            cb.onProgress("Extracting backup…");
             int n = unzip(zipUri, filesDir, cb);
 
             // 必须校验到实质内容：
@@ -59,11 +59,11 @@ public class RestoreManager {
             // 并不代表业务数据也解出来了。所以还要看 base/ 里有没有库文件。
             File newPg = new File(filesDir, "pgdata");
             if (!new File(newPg, "PG_VERSION").exists()) {
-                throw new Exception("备份不完整：pgdata 里没有 PG_VERSION");
+                throw new Exception("Incomplete backup: PG_VERSION is missing from pgdata");
             }
             File base = new File(newPg, "base");
             if (!base.isDirectory() || base.list() == null || base.list().length == 0) {
-                throw new Exception("备份不完整：pgdata/base 为空（只还原了 " + n + " 个文件）");
+                throw new Exception("Incomplete backup: pgdata/base is empty (only restored " + n + " files)");
             }
 
             // PG 对数据目录权限敏感，恢复后修正
@@ -81,10 +81,10 @@ public class RestoreManager {
             if (pgOld.exists()) pgOld.renameTo(new File(filesDir, "pgdata.old-" + stamp));
             if (artexOld.exists()) artexOld.renameTo(new File(filesDir, "artex.old-" + stamp));
 
-            cb.onProgress("完成，共还原 " + n + " 个文件");
+            cb.onProgress("Finished. Restored " + n + " files");
             cb.onDone();
         } catch (Throwable t) {
-            Log.e("ARTEX", "恢复失败", t);
+            Log.e("ARTEX", "Restore failed", t);
             // 回滚：删掉解压出来的一半，恢复原数据
             try {
                 if (moved) {
@@ -94,7 +94,7 @@ public class RestoreManager {
                     if (artexOld.exists()) artexOld.renameTo(artex);
                 }
             } catch (Throwable t2) {
-                Log.e("ARTEX", "回滚也失败了", t2);
+                Log.e("ARTEX", "Rollback also failed", t2);
             }
             cb.onError(t.getMessage() == null ? t.toString() : t.getMessage());
         }
@@ -112,7 +112,7 @@ public class RestoreManager {
                 }
             }
         } catch (Throwable t) {
-            Log.w("ARTEX", "清理旧备份失败: " + t);
+            Log.w("ARTEX", "Failed to remove old backup: " + t);
         }
     }
 
@@ -120,7 +120,7 @@ public class RestoreManager {
         File pid = new File(filesDir, "pgdata/postmaster.pid");
         for (int i = 0; i < 40; i++) {
             if (!pid.exists()) return;
-            if (i % 6 == 0) cb.onProgress("等待数据库退出…");
+            if (i % 6 == 0) cb.onProgress("Waiting for database to stop…");
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
@@ -131,7 +131,7 @@ public class RestoreManager {
 
     private int unzip(Uri uri, File destRoot, Callback cb) throws Exception {
         InputStream raw = ctx.getContentResolver().openInputStream(uri);
-        if (raw == null) throw new Exception("无法读取所选文件");
+        if (raw == null) throw new Exception("Unable to read selected file");
         int count = 0, skipped = 0;
         ZipInputStream zin = new ZipInputStream(raw);
         try {
@@ -158,7 +158,7 @@ public class RestoreManager {
                         while ((r = zin.read(buf)) > 0) fo.write(buf, 0, r);
                     }
                     count++;
-                    if (count % 200 == 0) cb.onProgress("已还原 " + count + " 个文件…");
+                    if (count % 200 == 0) cb.onProgress("Restored " + count + " files…");
                 }
                 zin.closeEntry();
             }
@@ -167,7 +167,7 @@ public class RestoreManager {
                 zin.close();
             } catch (Throwable ignored) {}
         }
-        if (skipped > 0) cb.onProgress("（跳过 " + skipped + " 条异常路径）");
+        if (skipped > 0) cb.onProgress(" (skipped " + skipped + " invalid paths)");
         return count;
     }
 
