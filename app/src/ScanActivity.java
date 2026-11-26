@@ -71,7 +71,7 @@ public class ScanActivity extends Activity implements SurfaceHolder.Callback, Ca
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT));
 
         TextView hint = new TextView(this);
-        hint.setText("将二维码对准取景框");
+        hint.setText("Align the QR code within the frame");
         hint.setTextColor(Color.WHITE);
         hint.setTextSize(15);
         hint.setGravity(Gravity.CENTER);
@@ -122,7 +122,7 @@ public class ScanActivity extends Activity implements SurfaceHolder.Callback, Ca
         if (code != REQ_CAMERA) return;
         boolean granted = results.length > 0 && results[0] == PackageManager.PERMISSION_GRANTED;
         if (!granted) {
-            Toast.makeText(this, "需要相机权限才能扫码", Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Camera permission is required to scan QR codes", Toast.LENGTH_LONG).show();
             finish();
             return;
         }
@@ -196,7 +196,7 @@ public class ScanActivity extends Activity implements SurfaceHolder.Callback, Ca
             }
         } catch (Throwable t) {
             releaseCamera();
-            Toast.makeText(this, "打开相机失败：" + t.getMessage(), Toast.LENGTH_LONG).show();
+            Toast.makeText(this, "Unable to open camera: " + t.getMessage(), Toast.LENGTH_LONG).show();
             finish();
         }
     }
