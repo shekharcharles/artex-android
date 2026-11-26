@@ -18,8 +18,8 @@ public class Notifier {
             if (nm == null) return;
             if (nm.getNotificationChannel(CHANNEL_ID) == null) {
                 NotificationChannel ch = new NotificationChannel(
-                        CHANNEL_ID, "ARTEX 服务", NotificationManager.IMPORTANCE_DEFAULT);
-                ch.setDescription("ARTEX 服务状态与访问地址");
+                        CHANNEL_ID, "ARTEX Service", NotificationManager.IMPORTANCE_DEFAULT);
+                ch.setDescription("ARTEX service status and access address");
                 ch.setShowBadge(false);
                 nm.createNotificationChannel(ch);
             }
