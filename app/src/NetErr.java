@@ -12,24 +12,24 @@ final class NetErr {
     private NetErr() {}
 
     static String describe(Throwable t) {
-        if (t == null) return "未知错误";
+        if (t == null) return "Unknown error";
         String m = t.getMessage();
         if (m == null || m.isEmpty()) m = t.getClass().getSimpleName();
         String low = m.toLowerCase();
         if (low.contains("unable to resolve host") || low.contains("unknownhost")) {
-            return "无法解析 GitHub 域名（可能需要代理）";
+            return "Unable to resolve GitHub hostname (a proxy may be required)";
         }
         if (low.contains("timed out") || low.contains("timeout")) {
-            return "连接超时（可能需要代理）";
+            return "Connection timed out (a proxy may be required)";
         }
         if (low.contains("econnrefused") || low.contains("connection refused")) {
-            return "连接被拒绝";
+            return "Connection refused";
         }
         if (low.contains("network is unreachable") || low.contains("unreachable")) {
-            return "网络不可达";
+            return "Network unreachable";
         }
         if (low.contains("ssl") || low.contains("certificate")) {
-            return "TLS 握手失败：" + m;
+            return "TLS handshake failed: " + m;
         }
         return m;
     }
