@@ -49,7 +49,7 @@ public class BackupManager {
     /** 同步执行（调用方需放在后台线程） */
     public void run(ArtExService svc, boolean lite, Callback cb) {
         try {
-            cb.onProgress("停止服务（保证数据一致）…");
+            cb.onProgress("Stopping service to ensure data consistency…");
             if (svc != null) svc.stop();
             waitPgExit(cb);
 
@@ -57,7 +57,7 @@ public class BackupManager {
                     + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.US).format(new Date())
                     + ".zip";
 
-            cb.onProgress(lite ? "打包数据（精简：不含任务文件）…" : "打包数据…");
+            cb.onProgress(lite ? "Packaging data (compact: excluding task files)…" : "Packaging data…");
             OutputStream out = openOutput(name);
             long bytes;
             try {
@@ -68,10 +68,10 @@ public class BackupManager {
                 } catch (Throwable ignored) {}
             }
 
-            cb.onProgress("完成，共 " + (bytes / 1024 / 1024) + " MB");
+            cb.onProgress("Finished. Total: " + (bytes / 1024 / 1024) + " MB");
             cb.onDone(lastWhere != null ? lastWhere : name);
         } catch (Throwable t) {
-            Log.e("ARTEX", "备份失败", t);
+            Log.e("ARTEX", "Backup failed", t);
             cb.onError(t.getMessage() == null ? t.toString() : t.getMessage());
         }
     }
@@ -81,14 +81,14 @@ public class BackupManager {
         File pid = new File(filesDir, "pgdata/postmaster.pid");
         for (int i = 0; i < 40; i++) {
             if (!pid.exists()) return;
-            if (i % 6 == 0) cb.onProgress("等待数据库退出…");
+            if (i % 6 == 0) cb.onProgress("Waiting for database to stop…");
             try {
                 Thread.sleep(500);
             } catch (InterruptedException e) {
                 return;
             }
         }
-        Log.w("ARTEX", "等待 PG 退出超时，仍继续打包");
+        Log.w("ARTEX", "Database shutdown timed out; continuing packaging");
     }
 
     /** 输出流：API 29+ 走 MediaStore（免权限），旧版本写公共 Download 目录 */
@@ -120,9 +120,9 @@ public class BackupManager {
                         return os;
                     }
                 }
-                Log.w("ARTEX", "MediaStore 建文件失败，改用公共下载目录");
+                Log.w("ARTEX", "MediaStore file creation failed; using public Downloads directory");
             } catch (Throwable t) {
-                Log.w("ARTEX", "MediaStore 写入失败: " + t);
+                Log.w("ARTEX", "MediaStore write failed: " + t);
             }
         }
 
@@ -130,19 +130,19 @@ public class BackupManager {
         try {
             File dir = new File(Environment.getExternalStoragePublicDirectory(
                     Environment.DIRECTORY_DOWNLOADS), "ARTEX 备份");
-            if (!dir.exists() && !dir.mkdirs()) throw new Exception("mkdirs 失败");
+            if (!dir.exists() && !dir.mkdirs()) throw new Exception("Directory creation failed");
             File f = new File(dir, name);
             OutputStream os = new FileOutputStream(f);
             lastWhere = f.getAbsolutePath();
             return os;
         } catch (Throwable t) {
-            Log.w("ARTEX", "公共下载目录写入失败: " + t);
+            Log.w("ARTEX", "Public Downloads write failed: " + t);
         }
 
         // 3) 应用私有外部目录（/sdcard/Android/data/<pkg>/files/backup）
         File dir = ctx.getExternalFilesDir("backup");
         if (dir == null) dir = new File(ctx.getFilesDir(), "backup");
-        if (!dir.exists() && !dir.mkdirs()) throw new Exception("无法创建备份目录: " + dir);
+        if (!dir.exists() && !dir.mkdirs()) throw new Exception("Unable to create backup directory: " + dir);
         File f = new File(dir, name);
         lastWhere = f.getAbsolutePath();
         return new FileOutputStream(f);
@@ -236,7 +236,7 @@ public class BackupManager {
             }
         }
         zip.closeEntry();
-        if (++files % 200 == 0 && cb != null) cb.onProgress("已打包 " + files + " 个文件…");
+        if (++files % 200 == 0 && cb != null) cb.onProgress("Packaged " + files + " files…");
         return n;
     }
 
