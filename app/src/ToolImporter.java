@@ -104,7 +104,7 @@ final class ToolImporter {
             destDir.mkdirs();
             String name = sanitize(baseName(displayName));
             if (name.isEmpty()) {
-                cb.onError("无法确定文件名");
+                cb.onError("Unable to determine filename");
                 return;
             }
             // 先落到临时名，各项检查通过再改名。直接写成目标名的话，
@@ -113,12 +113,12 @@ final class ToolImporter {
             boolean tooBig = copyTo(uri, tmp);
             if (tooBig) {
                 tmp.delete();
-                cb.onError("文件超过 300MB");
+                cb.onError("File exceeds 300 MB");
                 return;
             }
             if (tmp.length() == 0) {
                 tmp.delete();
-                cb.onError("文件是空的");
+                cb.onError("File is empty");
                 return;
             }
             Verify v = verify(tmp);
@@ -127,7 +127,7 @@ final class ToolImporter {
                 cb.onError(v.reason);
                 return;
             }
-            cb.onProgress("静态校验通过（AArch64 静态）");
+            cb.onProgress("Static validation passed (AArch64 static binary)");
             tmp.setExecutable(true, false);
 
             Probe pr = probe(tmp);
@@ -138,16 +138,16 @@ final class ToolImporter {
                 return;
             }
             if (!pr.version.isEmpty()) {
-                cb.onProgress("试跑通过：版本 " + pr.version);
+                cb.onProgress("Test run passed: version " + pr.version);
             } else {
-                cb.onProgress("试跑通过");
+                cb.onProgress("Test run passed");
             }
             File dst = accept(tmp, name);
             if (dst == null) {
-                cb.onError("重命名失败");
+                cb.onError("Rename failed");
                 return;
             }
-            cb.onProgress("导入完成：" + name + " (" + mb(dst.length()) + ")");
+            cb.onProgress("Import completed: " + name + " (" + mb(dst.length()) + ")");
             cb.onDone(name, pr.version);
         } catch (Throwable t) {
             if (tmp != null && tmp.exists()) tmp.delete();
@@ -179,21 +179,21 @@ final class ToolImporter {
     Probe probeExisting(File f) { return probeExisting(f, false); }
 
     Probe probeExisting(File f, boolean quick) {
-        if (f == null || !f.exists()) return Probe.fail("文件不存在");
+        if (f == null || !f.exists()) return Probe.fail("File not found");
         f.setExecutable(true, false);
         return probe(f, quick);
     }
 
     /**
-     * 收下一个刚从网络下好的文件：静态校验 → chmod → 试跑 → 改名。
+     * 收下一个刚从网络下好的文件：静态校验 → chmod → Test run → 改名。
      *
      * 下载路径不能只跑 probe：一个 x86 或 glibc 动态的二进制被 exec 时
-     * 只会报 "无法执行"，用户看到的是「试跑未通过」，会往工具本身想，
+     * 只会报 "Unable to execute"，用户看到的是「试跑未通过」，会往工具本身想，
      * 而实际原因是文件根本不是给这台机器的。所以这里和手动导入
      * 走完全相同的三道校验。
      */
     Install installDownloaded(File file, String name) {
-        if (file == null || !file.exists()) return Install.fail("文件不存在");
+        if (file == null || !file.exists()) return Install.fail("File not found");
         Verify v = verify(file);
         if (!v.ok) {
             file.delete();
@@ -203,12 +203,12 @@ final class ToolImporter {
         Probe pr = probe(file);
         if (!pr.usable) {
             file.delete();
-            return Install.fail("试跑未通过：" + pr.detail);
+            return Install.fail("Test run failed: " + pr.detail);
         }
         File dst = accept(file, name);
         if (dst == null) {
             file.delete();
-            return Install.fail("重命名失败");
+            return Install.fail("Rename failed");
         }
         return Install.ok(dst, pr.version);
     }
@@ -289,7 +289,7 @@ final class ToolImporter {
                 p = pb.start();
             } catch (Throwable t) {
                 // exec 本身失败：这就是明确的不可用信号
-                return Probe.fail("无法执行：" + execErr(t));
+                return Probe.fail("Unable to execute: " + execErr(t));
             }
             everRan = true;
             try { p.getOutputStream().close(); } catch (Throwable ignored) {}
@@ -299,25 +299,25 @@ final class ToolImporter {
             if (!exited) {
                 p.destroyForcibly();
                 // 起得来、只是不肯自己退——对探测而言这就是好消息
-                return Probe.ok(pickVersion(out), "启动正常");
+                return Probe.ok(pickVersion(out), "Started successfully");
             }
             if (!out.trim().isEmpty()) {
                 String ver = pickVersion(out);
                 if (!ver.isEmpty()) {
-                    return Probe.ok(ver, "试跑 " + String.join(" ", args));
+                    return Probe.ok(ver, "Test run " + String.join(" ", args));
                 }
-                // 有输出但没版本号：说明二进制能跑，但还没找到最合适的参数。
+                // produced output without a version number：说明二进制能跑，但还没找到最合适的参数。
                 // 记下来继续试后面的（gau 的 -version 是报错，--version 才给版本；
                 // dalfox 的 -version 报错，--version 才正常）。全部试完仍没版本号
                 // 就退回这条，至少判定为可用。
                 if (firstRanHint.isEmpty()) {
-                    firstRanHint = "试跑 " + String.join(" ", args) + " 有输出但没版本号";
+                    firstRanHint = "Test run " + String.join(" ", args) + " produced output without a version number";
                 }
                 continue;
             }
-            lastDetail = "试跑 " + String.join(" ", args) + " 无任何输出";
+            lastDetail = "Test run " + String.join(" ", args) + " produced no output";
         }
-        if (!everRan) return Probe.fail("无法执行");
+        if (!everRan) return Probe.fail("Unable to execute");
         if (!firstRanHint.isEmpty()) return Probe.ok("", firstRanHint);
         return Probe.fail(lastDetail);
     }
@@ -362,7 +362,7 @@ final class ToolImporter {
      * exec 失败时的简短原因。
      *
      * 不走 NetErr：这里的 Throwable 是 ProcessBuilder.start() 抛的
-     * IOException（ENOENT/EACCES），不是网络异常，套上"可能需要代理"
+     * IOException（ENOENT/EACCES），不是网络异常，套上"A proxy may be required"
      * 之类的话反而误导。
      */
     private static String execErr(Throwable t) {
@@ -406,7 +406,7 @@ final class ToolImporter {
     /** 流式拷贝，不进内存。返回 true 表示超了大小上限、已中止 */
     private boolean copyTo(Uri uri, File dst) throws Exception {
         InputStream in = ctx.getContentResolver().openInputStream(uri);
-        if (in == null) throw new Exception("无法读取所选文件");
+        if (in == null) throw new Exception("Unable to read selected file");
         FileOutputStream out = new FileOutputStream(dst);
         try {
             byte[] buf = new byte[128 * 1024];
@@ -467,27 +467,27 @@ final class ToolImporter {
         try (InputStream in = new java.io.FileInputStream(f)) {
             got = in.read(head);
         } catch (Throwable t) {
-            return new Verify(false, "读取失败：" + t);
+            return new Verify(false, "Read failed: " + t);
         }
-        if (got < 64) return new Verify(false, "文件过小，不是可执行文件");
+        if (got < 64) return new Verify(false, "File is too small to be executable");
         if (head[0] != 0x7f || head[1] != 'E' || head[2] != 'L' || head[3] != 'F') {
-            return new Verify(false, "不是 ELF 可执行文件");
+            return new Verify(false, "Not an ELF executable");
         }
-        if (head[4] != 2) return new Verify(false, "不是 64 位程序");
+        if (head[4] != 2) return new Verify(false, "Not a 64-bit executable");
 
         int machine = u16(head, 18);
         if (machine != 0xB7) {
             String arch;
             if (machine == 0x3E) arch = "x86-64";
-            else if (machine == 0x28) arch = "ARM 32 位";
+            else if (machine == 0x28) arch = "32-bit ARM";
             else arch = "0x" + Integer.toHexString(machine);
-            return new Verify(false, "架构是 " + arch + "，需要 AArch64（arm64）");
+            return new Verify(false, "Architecture is " + arch + ", but AArch64 (arm64) is required");
         }
 
         long phoff = u64(head, 32);
         int phentsize = u16(head, 54);
         int phnum = u16(head, 56);
-        if (phnum <= 0 || phnum > 128) return new Verify(false, "ELF 头异常");
+        if (phnum <= 0 || phnum > 128) return new Verify(false, "Invalid ELF header");
 
         // 读 PT_INTERP 的路径和 PT_DYNAMIC 是否存在。
         // 动态链接不一定是坏事：Android 自己的二进制（gogo）用
@@ -516,14 +516,14 @@ final class ToolImporter {
         if (interp != null) {
             if (interp.contains("ld-linux")) {
                 return new Verify(false,
-                        "依赖 glibc（" + interp + "），Android 没有这个动态链接器；"
-                                + "请换 musl/静态版");
+                        "Requires glibc (" + interp + "); Android does not provide this dynamic linker; "
+                                + "Use a musl or statically linked build");
             }
             // /system/bin/linker64 等 Android 原生 interp：能跑，放行
             if (!interp.startsWith("/system/")) {
                 return new Verify(false,
-                        "动态链接器是 " + interp + "，不是 Android 的 linker64；"
-                                + "请换静态版");
+                        "Dynamic linker is " + interp + ", not Android linker64; "
+                                + "Use a statically linked build");
             }
         }
         return new Verify(true, "");
