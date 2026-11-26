@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 从 GitHub 拉 skill 清单，下载 zip 后交给后端安装。
+ * 从 GitHub 拉 skill 清单，Downloading zip 后交给后端安装。
  *
  * 为什么不自己解压写目录：后端有 POST /api/skills/upload，
  * 它会做 zip 解压（含 bzip2/zstd 兼容）、SKILL.md 校验、中文名处理、
@@ -76,7 +76,7 @@ final class SkillCatalog {
             c.setInstanceFollowRedirects(true);
             int code = c.getResponseCode();
             if (code != 200) {
-                cb.onError("清单请求失败：HTTP " + code);
+                cb.onError("Catalog request failed: HTTP " + code);
                 return;
             }
             StringBuilder sb = new StringBuilder();
@@ -87,7 +87,7 @@ final class SkillCatalog {
             }
             List<Entry> list = parse(sb.toString());
             if (list.isEmpty()) {
-                cb.onError("清单是空的");
+                cb.onError("Catalog is empty");
                 return;
             }
             cb.onCatalog(list);
@@ -119,13 +119,13 @@ final class SkillCatalog {
     }
 
     /**
-     * 下载 zip → 校验 sha256 → POST /api/skills/upload。
+     * Downloading zip → 校验 sha256 → POST /api/skills/upload。
      * @param overwrite 已存在时是否覆盖（后端用 ?overwrite=true 控制）
      */
     void install(Entry e, boolean overwrite, InstallCallback cb) {
         File tmp = null;
         try {
-            cb.onProgress("下载 " + e.name + "…");
+            cb.onProgress("Downloading " + e.name + "…");
             tmp = new File(ctx.getCacheDir(), ".skill-" + e.name + ".zip");
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             HttpURLConnection c = (HttpURLConnection) new URL(e.url).openConnection();
@@ -134,7 +134,7 @@ final class SkillCatalog {
             c.setInstanceFollowRedirects(true);
             int code = c.getResponseCode();
             if (code != 200) {
-                cb.onError("下载失败：HTTP " + code);
+                cb.onError("Download failed: HTTP " + code);
                 return;
             }
             long total = 0;
@@ -145,7 +145,7 @@ final class SkillCatalog {
                 while ((n = in.read(buf)) > 0) {
                     total += n;
                     if (total > MAX_BYTES) {
-                        cb.onError("skill 包超过 20MB");
+                        cb.onError("Skill package exceeds 20 MB");
                         return;
                     }
                     md.update(buf, 0, n);
@@ -155,13 +155,13 @@ final class SkillCatalog {
             String actual = hex(md.digest());
             if (e.sha256 != null && !e.sha256.isEmpty()
                     && !e.sha256.equalsIgnoreCase(actual)) {
-                cb.onError("校验失败：sha256 不匹配");
+                cb.onError("Verification failed: SHA-256 mismatch");
                 return;
             }
-            cb.onProgress("上传到后端…");
+            cb.onProgress("Uploading to backend…");
             String resp = upload(tmp, e.name, overwrite);
             if (resp == null) {
-                cb.onError("上传失败");
+                cb.onError("Upload failed");
                 return;
             }
             cb.onDone(e.name);
@@ -211,7 +211,7 @@ final class SkillCatalog {
                 JSONObject o = new JSONObject(body);
                 if (o.has("error")) msg = o.optString("error");
             } catch (Throwable ignored) {}
-            throw new Exception("后端拒绝（HTTP " + code + "）：" + msg);
+            throw new Exception("Backend rejected request (HTTP " + code + "）：" + msg);
         }
         return body;
     }
@@ -236,7 +236,7 @@ final class SkillCatalog {
         }
     }
 
-    /** 后端已装的 skill 名字集合。拿不到时返回 null（调用方按"未知"处理） */
+    /** 后端已装的 skill 名字集合。拿不到时返回 null（调用方按"Unknown"处理） */
     java.util.Set<String> installedNames() {
         HttpURLConnection c = null;
         try {
